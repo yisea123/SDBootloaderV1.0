@@ -128,13 +128,18 @@ void USART1_IRQHandler(void)
     uint32_t temp = 0;    
     if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)  
     {  
-        temp = USART1->SR;  
-        temp = USART1->DR; //清USART_IT_IDLE标志  
-		if (my_env.tty){
-			fill_rec_buf(temp);
-		}else if (temp == ' '){
-			my_env.tty = 1;
-		}
+      temp = USART1->SR;  
+      temp = USART1->DR; //清USART_IT_IDLE标志  
+			if (my_env.tty){
+				fill_rec_buf(temp);
+			}else if (temp == ' '){
+				my_env.tty_ctr++;
+				if (my_env.tty_ctr > 5){
+					my_env.tty = 1;
+				}
+			}else{
+				my_env.tty_ctr = 0;
+			}
     }else{
         temp = USART1->SR;  
         temp = USART1->DR; //清USART_IT_IDLE标志  

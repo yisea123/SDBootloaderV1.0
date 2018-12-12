@@ -95,6 +95,7 @@ typedef struct
 	U16 dma_state;
 	U16 print;
 	U16 tty;
+	U16 tty_ctr;
 	S16 uart0_cmd_flag;
 	U16 system_runing;
 	U16 modbus_rtu_addr;
