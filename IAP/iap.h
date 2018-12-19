@@ -4,8 +4,8 @@
 #define HEX_DATA_START 9
 
 #define FLASH_APP1_ADDR		0x08010000  	//第一个应用程序起始地址(存放在FLASH)
-#define SPI_FLASH_INFO_ADDR		(12*1024*1024)  	//第一个应用程序起始地址(存放在FLASH)
-#define SPI_FLASH_APP1_ADDR		(13*1024*1024)  	//第一个应用程序起始地址(存放在FLASH)
+#define SPI_FLASH_REG_INFO_ADDR		(12*1024*1024)  	//
+#define SPI_FLASH_APP1_ADDR		(14*1024*1024)  	//第一个应用程序起始地址(存放在SPI FLASH)
 
 
 #define DEFAULT_APP_FILE_NAME "0:/Counter.hex"
@@ -21,10 +21,7 @@ typedef struct{
 }s_hex_file;
 
 typedef struct{
-	char app_name[16];
-	u32 app_size;
 	char reg_info[16];
-	U16 SAVE_DATA[128];
 }s_spi_file;
 
 

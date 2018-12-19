@@ -1054,7 +1054,7 @@ int mk_reg (int flag)
 	GetLockCode (id);
 	MD5Digest(id, hash);
 	//hash:716CA8A3 433C6F50 E09400E1 B615B636
-	W25QXX_Read ((U8*)spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
+	W25QXX_Read ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
 	my_println("reg ID: %s", id);
 
 	for (i = 0; i < 16; i++){
@@ -1069,7 +1069,7 @@ int mk_reg (int flag)
 		my_print("%x", spi_flash_info->reg_info[i]);
 	}
 	my_println ();
-	W25QXX_Write ((U8*)spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
+	W25QXX_Write ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
 	if (spi_flash_info != NULL)
 		free (spi_flash_info);
 	return 0;
@@ -1150,10 +1150,10 @@ int do_load (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
 	switch (argc){
 		case 1:
-			if (load_spi_app(SPI_FLASH_APP1_ADDR) == 0){
-				start_app ();
-			}else{
-			}
+//			if (load_spi_app(SPI_FLASH_APP1_ADDR) == 0){
+//				start_app ();
+//			}else{
+//			}
 			break;
 		default: cmd_usage (cmdtp);break;
 	}
@@ -1189,7 +1189,7 @@ S16 check_reg (void)
 	GetLockCode (id);
 	MD5Digest(id, hash);
 
-	W25QXX_Read ((U8*)spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
+	W25QXX_Read ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
 	for (i = 0; i < 16; i++){
 		if (spi_flash_info->reg_info[i] != hash[i]){
 			flag = 1;//Î´×¢²á
@@ -1215,7 +1215,7 @@ S16 check_reg (void)
 						spi_flash_info->reg_info[i] = hash[i];
 					}
 				}
-				W25QXX_Write ((U8*)spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
+				W25QXX_Write ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
 			}else{
 				my_println ("Invalid reg code:%s", reg_str);
 				my_println ("reg ID :%s", id);

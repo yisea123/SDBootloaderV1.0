@@ -85,7 +85,6 @@ int iap_func (char *app_name, int opt)
 {
 	u32 flash_addr = 0;
 	
-	u32 spi_flash_addr = SPI_FLASH_APP1_ADDR;
 	u32 app_size = 0;
 	U16 hex_data_len = 0;
 	U16 len_temp = 492;
@@ -93,14 +92,13 @@ int iap_func (char *app_name, int opt)
 	FATFS fs;
 	FIL file;
 	FRESULT Res;	
-    FILINFO fno;
+  FILINFO fno;
 	char buf[BUFF_SIZE];
 	s_hex_file p_hex;
-	s_spi_file spi_flash_info;
 	
 	memset (&fno, 0, sizeof (FILINFO));
 	
-	W25QXX_Read ((U8*)&spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
+//	W25QXX_Read ((U8*)&spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
 	my_println ("Start Update App");
 	Res = f_mount(&fs, "0:" , 1);	
 	
@@ -134,7 +132,6 @@ int iap_func (char *app_name, int opt)
 		Res = scan_files(buf);
 		get_fileinfo (&dir, &fno);*/
 	}
-	strcpy (spi_flash_info.app_name, app_name);
 	Res = FR_INVALID_OBJECT;
 	for (;;){
 		if (f_eof(&file))
@@ -162,12 +159,6 @@ int iap_func (char *app_name, int opt)
 					flash_addr += 2048;
 					LED1 = !LED1;
 				}
-				if (spi_index == 2048){
-					spi_index = 0;
-					W25QXX_Write ((U8*)spibuf, spi_flash_addr, 4096);
-					spi_flash_addr += 4096;
-					LED1 = !LED1;
-				}
 				break;
 			case 0x01://end
 				Res = FR_OK;
@@ -185,11 +176,6 @@ int iap_func (char *app_name, int opt)
 	if (index != 0){
 		STMFLASH_Write(flash_addr,iapbuf,index);//将最后的一些内容字节写进去.  
 	}
-	if (spi_index != 0){
-		W25QXX_Write ((U8*)spibuf, spi_flash_addr, spi_index*2);
-	}
-	spi_flash_info.app_size = app_size;
-	W25QXX_Write ((U8*)&spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
 	if (opt == 1){
 		f_chmod(app_name, AM_RDO, AM_RDO | AM_ARC);
 	}
@@ -228,32 +214,6 @@ void start_app (void)
 
 int load_spi_app (u32 app_addr)
 {
-	u32 flash_addr = FLASH_APP1_ADDR;
-	u32 spi_flash_addr = app_addr;
-	s_spi_file spi_flash_info;
-	int i = 0, sec = 0, remain = 0;
-	W25QXX_Read ((U8*)&spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
-	if (spi_flash_info.app_size > 0x70000){
-		my_println ("No invalid app in spi flash!");
-		return -1;
-	}
-	my_println ("Load App From SPI Flash");
-	sec = spi_flash_info.app_size / 2048;
-	sec *= 2048;
-	remain = spi_flash_info.app_size %2048;
-
-	for (i = 0; i < sec; i += 2048){
-		W25QXX_Read ((U8*)iapbuf, spi_flash_addr + i, 2048);
-		STMFLASH_Write(flash_addr,iapbuf,1024);	
-		flash_addr += 2048;
-		my_println ("addr:%06x size:2048", spi_flash_addr + i);
-		LED1 = !LED1;
-	}
-	if (remain != 0){
-		W25QXX_Read ((U8*)iapbuf, spi_flash_addr + sec, remain);
-		my_println ("addr:%06x size:%04d", spi_flash_addr + sec, remain);
-		STMFLASH_Write(flash_addr,iapbuf,remain/2);	
-	}
 	return 0;
 }
 

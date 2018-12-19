@@ -96,8 +96,8 @@ void uart1_init (void)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;	//收发模式
 
 	USART_Init(USART1, &USART_InitStructure); //初始化串口1
-	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);//开启串口接受中断 
-	//USART_ITConfig(USART1,USART_IT_IDLE,ENABLE); //开启串口空闲中断 
+	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);//开启串口接受中断 
+	USART_ITConfig(USART1,USART_IT_IDLE,ENABLE); //开启串口空闲中断 
 	USART_Cmd(USART1, ENABLE);                    //使能串口1 
 	
 	uart1_dma_config ();
@@ -126,7 +126,7 @@ void start_uart1_receive (void)
 void USART1_IRQHandler(void)                                 
 {     
     uint32_t temp = 0;    
-    if(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)  
+    if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)  
     {  
       temp = USART1->SR;  
       temp = USART1->DR; //清USART_IT_IDLE标志  
