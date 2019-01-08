@@ -1039,39 +1039,59 @@ u32 GetLockCode(char *id)
 	return Lock_Code;
 }
 
+void get_reg (s_reg_file *p_reg_file)
+{
+	uint16_t i;
+//	W25QXX_Read ((U8*)p_reg_file, FLASH_REG_INFO_ADDR, sizeof(s_reg_file));
+	STMFLASH_Read (FLASH_REG_INFO_ADDR, (uint16_t *)p_reg_file, sizeof(s_reg_file) / 2);
+	my_println ("-------------------------------------------------------");
+	my_print("read reg info: ");
+	for (i = 0; i < 16; i++){
+		my_print("%x", p_reg_file->reg_info[i]);
+	}
+	my_println ();
+	my_println ("-------------------------------------------------------");
+}
+void write_reg (s_reg_file *p_reg_file)
+{
+//	W25QXX_Write ((U8*)p_reg_file, FLASH_REG_INFO_ADDR, sizeof(s_reg_file));
+	STMFLASH_Write (FLASH_REG_INFO_ADDR, (uint16_t *)p_reg_file, sizeof(s_reg_file) / 2);
+	my_println ("write reg file");
+}
+
 int mk_reg (int flag)
 {
-	s_spi_file *spi_flash_info = NULL;
+	s_reg_file *p_reg_file = NULL;
 	char id[32];
 	char hash[16];
 	int i;
-	spi_flash_info = malloc (sizeof (s_spi_file));
-	if (spi_flash_info == NULL){
-		my_println ("malloc spi_flash_info failed!");
+	p_reg_file = malloc (sizeof (s_reg_file));
+	if (p_reg_file == NULL){
+		my_println ("malloc p_reg_file failed!");
 		return -1;
 	}
 	memset (id, 0, sizeof(id));
 	GetLockCode (id);
 	MD5Digest(id, hash);
 	//hash:716CA8A3 433C6F50 E09400E1 B615B636
-	W25QXX_Read ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
+	get_reg (p_reg_file);
 	my_println("reg ID: %s", id);
 
 	for (i = 0; i < 16; i++){
-		spi_flash_info->reg_info[i] = hash[i];
+		p_reg_file->reg_info[i] = hash[i];
 	}
 	if (flag == 0){
 		my_println("Clear reg info");
-		memset (spi_flash_info->reg_info, 0xFF, 16);
+		memset (p_reg_file->reg_info, 0xFF, 16);
 	}
 	my_print("reg info: ");
 	for (i = 0; i < 16; i++){
-		my_print("%x", spi_flash_info->reg_info[i]);
+		my_print("%x", p_reg_file->reg_info[i]);
 	}
 	my_println ();
-	W25QXX_Write ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
-	if (spi_flash_info != NULL)
-		free (spi_flash_info);
+	write_reg (p_reg_file);
+	if (p_reg_file != NULL)
+		free (p_reg_file);
 	return 0;
 }
 int do_mk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
@@ -1150,7 +1170,7 @@ int do_load (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
 	switch (argc){
 		case 1:
-//			if (load_spi_app(SPI_FLASH_APP1_ADDR) == 0){
+//			if (load_spi_app(FLASH_APP1_ADDR) == 0){
 //				start_app ();
 //			}else{
 //			}
@@ -1173,25 +1193,24 @@ S16 check_reg (void)
 	FIL file;
 	FRESULT Res;	
 	char reg_str[64];
-	s_spi_file *spi_flash_info = NULL;
+	s_reg_file *p_reg_file = NULL;
 	char id[32];
 	char hash[16];
 	char buf[64];
 	int i, flag = 0;
 	
-	spi_flash_info = malloc (sizeof (s_spi_file));
-	if (spi_flash_info == NULL){
-		my_println ("malloc spi_flash_info failed!");
+	p_reg_file = malloc (sizeof (s_reg_file));
+	if (p_reg_file == NULL){
+		my_println ("malloc p_reg_file failed!");
 		return -1;
 	}
 	
 	memset (id, 0, sizeof(id));
 	GetLockCode (id);
 	MD5Digest(id, hash);
-
-	W25QXX_Read ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
+	get_reg (p_reg_file);
 	for (i = 0; i < 16; i++){
-		if (spi_flash_info->reg_info[i] != hash[i]){
+		if (p_reg_file->reg_info[i] != hash[i]){
 			flag = 1;//Î´×¢²á
 		}
 	}
@@ -1211,11 +1230,11 @@ S16 check_reg (void)
 			if (strcmp (buf, reg_str) == 0){	
 				my_println ("reg code :%s", reg_str);
 				for (i = 0; i < 16; i++){
-					if (spi_flash_info->reg_info[i] != hash[i]){
-						spi_flash_info->reg_info[i] = hash[i];
+					if (p_reg_file->reg_info[i] != hash[i]){
+						p_reg_file->reg_info[i] = hash[i];
 					}
 				}
-				W25QXX_Write ((U8*)spi_flash_info, SPI_FLASH_REG_INFO_ADDR, sizeof(s_spi_file));
+				write_reg(p_reg_file);
 			}else{
 				my_println ("Invalid reg code:%s", reg_str);
 				my_println ("reg ID :%s", id);
@@ -1233,8 +1252,8 @@ S16 check_reg (void)
 		my_println("^_^");//ÒÑ×¢²á
 	}
 	
-	if (spi_flash_info != NULL)
-		free (spi_flash_info);
+	if (p_reg_file != NULL)
+		free (p_reg_file);
 	return Res;
 }
 

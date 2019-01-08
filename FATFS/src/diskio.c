@@ -88,7 +88,7 @@ DRESULT disk_read (
 		case EX_FLASH://外部flash
 			for(;count>0;count--)
 			{
-				W25QXX_Read(buff,sector*FLASH_SECTOR_SIZE,FLASH_SECTOR_SIZE);
+//				W25QXX_Read(buff,sector*FLASH_SECTOR_SIZE,FLASH_SECTOR_SIZE);
 				sector++;
 				buff+=FLASH_SECTOR_SIZE;
 			}
@@ -130,7 +130,7 @@ DRESULT disk_write (
 		case EX_FLASH://外部flash
 			for(;count>0;count--)
 			{										    
-				W25QXX_Write((u8*)buff,sector*FLASH_SECTOR_SIZE,FLASH_SECTOR_SIZE);
+//				W25QXX_Write((u8*)buff,sector*FLASH_SECTOR_SIZE,FLASH_SECTOR_SIZE);
 				sector++;
 				buff+=FLASH_SECTOR_SIZE;
 			}

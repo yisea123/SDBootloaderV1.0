@@ -53,26 +53,27 @@ int main (void)
 	my_println ("my_cmd_Start at 0x%08x", (unsigned int)MY_CMD_RO_SEC_START);
 	my_println ("my_cmd_End at   0x%08x", (unsigned int)MY_CMD_RO_SEC_END);
 	my_println ("my_cmd_Length   0x%02x", (unsigned int)MY_CMD_RO_SEC_LENGTH);
-	my_println ("****************************RTC Info*****************************");
-	RTC_Init();	  			//RTC初始化
-	my_print ("%04d-%02d-%2d  ", calendar.w_year, calendar.w_month, calendar.w_date); 
-	my_println ("%02d:%02d:%02d", calendar.hour, calendar.min, calendar.sec);
-	my_println ("**************************SPI Flash Info*************************");
-	W25QXX_Init();			//W25QXX初始化
-	if (W25QXX_ReadID()!=W25Q128){
-		my_println ("W25Q128 Check Failed! ");
-	}else{
-		my_println ("W25Q128 Ready! ");
-	}
-	my_println ("***************************SD Card Info**************************");
-	if (SD_Init()){
-		my_println ("SD Card Init Error! Please Check! ");
-	}else{	
-		my_env.SD_exist = 0x55;
-		show_sdcard_info();	//打印SD卡相关信息
-	}
-	my_println ("***************************FatFs Info**************************");
-	LOG ("System Start");
+//	my_println ("****************************RTC Info*****************************");
+//	RTC_Init();	  			//RTC初始化
+//	my_print ("%04d-%02d-%2d  ", calendar.w_year, calendar.w_month, calendar.w_date); 
+//	my_println ("%02d:%02d:%02d", calendar.hour, calendar.min, calendar.sec);
+//	my_println ("**************************SPI Flash Info*************************");
+//	W25QXX_Init();			//W25QXX初始化
+//	if (W25QXX_ReadID()!=W25Q128){
+//		my_println ("W25Q128 Check Failed! ");
+//	}else{
+//		my_println ("W25Q128 Ready! ");
+//	}
+//	my_println ("***************************SD Card Info**************************");
+//	if (SD_Init()){
+//		my_println ("SD Card Init Error! Please Check! ");
+//	}else{	
+//		my_env.SD_exist = 0x55;
+//		show_sdcard_info();	//打印SD卡相关信息
+//	}
+//	my_println ("***************************FatFs Info**************************");
+//	my_println ("*****************************************************************");
+//	LOG ("System Start");
 	my_println ("*****************************************************************");
 	/*************************************************************************************/
 #ifdef USE_LUA

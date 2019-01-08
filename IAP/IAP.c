@@ -98,7 +98,7 @@ int iap_func (char *app_name, int opt)
 	
 	memset (&fno, 0, sizeof (FILINFO));
 	
-//	W25QXX_Read ((U8*)&spi_flash_info, SPI_FLASH_INFO_ADDR, sizeof(s_spi_file));
+//	W25QXX_Read ((U8*)&p_reg_file, SPI_FLASH_INFO_ADDR, sizeof(s_reg_file));
 	my_println ("Start Update App");
 	Res = f_mount(&fs, "0:" , 1);	
 	

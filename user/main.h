@@ -38,6 +38,7 @@ typedef double         fp64;                    /* double precision floating poi
 #include "ModbusRTU.h"
 #include "drive_io.h"
 #include "sdio_sdcard.h"
+#include "FLASH_EEPROM.h"
 #include "rtc.h"
 #include "spi.h"
 #include "w25qxx.h" 
