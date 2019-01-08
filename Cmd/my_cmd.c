@@ -981,6 +981,19 @@ MY_CMD(
 	"run\n"
 );
 
+int do_print_version  (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	my_println("\n----------------------------------------------------");
+	PRINT_VERSION()
+	my_println("----------------------------------------------------");
+	return 0;
+}
+MY_CMD(
+	version,	4,	1,	do_print_version,
+	"version - print version information\n",
+	"version\n"
+);
+
 
 int do_fdisk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
@@ -1044,6 +1057,7 @@ void get_reg (s_reg_file *p_reg_file)
 	uint16_t i;
 //	W25QXX_Read ((U8*)p_reg_file, FLASH_REG_INFO_ADDR, sizeof(s_reg_file));
 	STMFLASH_Read (FLASH_REG_INFO_ADDR, (uint16_t *)p_reg_file, sizeof(s_reg_file) / 2);
+	my_println ();
 	my_println ("-------------------------------------------------------");
 	my_print("read reg info: ");
 	for (i = 0; i < 16; i++){

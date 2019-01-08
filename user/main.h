@@ -2,6 +2,9 @@
 #define __MAIN_H__
 
 
+#define PROGRAM_VERSION "V1.0\n(Compile Time:", __DATE__, __TIME__, ")"
+#define PRINT_VERSION() my_println ("Software Version : %s %s %s%s", PROGRAM_VERSION);  
+
 #define U32 unsigned int
 #define U16 unsigned short
 #define S32 int
