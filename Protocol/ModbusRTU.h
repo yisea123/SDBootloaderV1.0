@@ -24,7 +24,8 @@ typedef struct
 }s_modbus_save_data;
 
 
-u16 CRC16(u8 *data_buf, u16 len);
+u16 CRC16(uint16_t pre_crc, char *data_buf, uint16_t len);
+void write_to_app_space (char * data, uint16_t len);
 void modbus_analyze(u8 * data_buf);
 void modbus_init(void);
 int save_para (int flag);

@@ -111,13 +111,13 @@ void start_uart3_dma (u32 _memBaseAddr, U16 _size)
 //
 void DMA1_Channel5_IRQHandler(void)
 {	
-	static uint16_t i;
 	if(DMA_GetITStatus(DMA1_IT_HT5)){
-		i += 1;
+		write_to_app_space (cmd_analyze.data.rec_buf0, _CMD_BUF_LEN);
+		my_print ("1");
 	}else if(DMA_GetITStatus(DMA1_IT_TC5)){
-		i += 100;
+		write_to_app_space (cmd_analyze.data.rec_buf1, _CMD_BUF_LEN);
+		my_print ("2");
 	}else if (DMA_GetITStatus(DMA1_IT_TE5)){
-		i += 1000;
 	}
 	DMA_ClearITPendingBit(DMA1_IT_GL5); //清除全部中断标志
 }

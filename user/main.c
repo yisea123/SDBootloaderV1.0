@@ -110,8 +110,12 @@ int main (void)
 	cmd ();
 	while (my_env.tty){
 		if (my_env.uart0_cmd_flag == 1){ 
-			my_env.uart0_cmd_flag = 0;			
-			vTaskCmdAnalyze ();
+			my_env.uart0_cmd_flag = 0;		
+			if (my_env.tty == TTY_CONSOLE){
+				vTaskCmdAnalyze ();
+			}else if (my_env.tty == TTY_UPDATE){
+				update_finished ();
+			}
 		}
 		delay_ms (100);
 		LED2 = !LED2;	

@@ -465,7 +465,7 @@ void login (char * user, char * pwd)
 		my_println("Username or Password not correct, try again!");
 	}
 }
-                            
+ //                          
 void vTaskCmdAnalyze( void )  
 {                       
 	uint32_t uart1_rec_count = 0;   
@@ -1274,18 +1274,99 @@ MY_CMD(
 	"id - view Id\n",
 	"id \n"
 );
-
+static uint16_t recv_crc_value = 0;
+static uint16_t pre_crc_value = 0;
+/*
+* 函数名 :CRC16
+* 描述 : 计算CRC16
+* 输入 : ptr---数据,len---长度
+* 输出 : 校验值
+*/ 
+uint16_t CRC16(uint16_t pre_crc, char *ptr, uint16_t len) 
+{
+	uint8_t i;
+	uint16_t crc = 0xFFFF & pre_crc; 
+	if (len == 0) {
+		len = 1;
+	} 
+	while (len--) {
+		crc ^= *ptr;
+		for (i = 0; i<8; i++) {
+			if (crc & 1) {
+				crc >>= 1; 
+				crc ^= 0xA001;
+			}else{
+				crc >>= 1;
+			}
+		} ptr++;
+	} 
+	//return((crc >> 8) |(crc << 8)); 
+	return(crc); 
+}
 void write_reset (void)
 {
+	pre_crc_value = 0xFFFF;
 }
 //
 void write_start (void)
 {
+	my_env.tty = TTY_UPDATE;
 	start_uart1_receive ();
 }
 //
-
-
+void write_to_app_space (char * data, uint16_t len)
+{
+	uint16_t crc_value_tmp;
+	uint16_t crc_value_tmp1;
+	
+	crc_value_tmp = ((data[len - 2]<< 8) | (data[len - 1]));
+	//my_println ("crc_value_tmp %04x", crc_value_tmp);
+	crc_value_tmp1 = CRC16(pre_crc_value, data, len - 2);
+	//my_println ("crc_value_tmp1 %04x", crc_value_tmp1);
+	if (crc_value_tmp == crc_value_tmp1){
+		//my_println ("last piece");
+		//my_println ("%04x", crc_value_tmp);
+		recv_crc_value = crc_value_tmp;
+		pre_crc_value = crc_value_tmp1;
+	}else{
+		pre_crc_value = CRC16(pre_crc_value, data, len);
+	}
+	memset (data, 0, _CMD_BUF_LEN);
+}
+//
+void update_finished (void)
+{
+	uint32_t uart1_rec_count = 0;  
+	char * p_data;
+	uart1_rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA1_Channel5); 
+	my_println ();
+	if (uart1_rec_count < 2048){
+		p_data = cmd_analyze.data.rec_buf0;
+	}else{
+		p_data = cmd_analyze.data.rec_buf1;
+	}
+	uart1_rec_count %= 2048;
+	if (uart1_rec_count > 1){
+		my_println ("have data here");
+		//my_println ("%02x%02x", p_data[uart1_rec_count-2], p_data[uart1_rec_count-1]);
+		recv_crc_value = (p_data[uart1_rec_count-2] << 8) | (p_data[uart1_rec_count-1]);
+		if (uart1_rec_count > 2){
+			write_to_app_space (p_data, uart1_rec_count-2);
+		}
+	}else if (uart1_rec_count == 1){
+		my_println ("bin file not correct!!!");
+	}else{
+		my_println ("no data here");
+	}
+	my_println ("recv_crc_value %04x", recv_crc_value);
+	my_println ("pre_crc_value  %04x", pre_crc_value);
+	if (recv_crc_value == pre_crc_value){
+		my_println ("update complete!");
+	}else{
+		my_println ("receive data error, please update again!!!");
+	}
+	my_env.tty = TTY_CONSOLE;
+}
 int do_write (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	switch (argc){

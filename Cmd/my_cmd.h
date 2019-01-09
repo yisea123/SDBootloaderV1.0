@@ -11,6 +11,7 @@ enum
 {
 	TTY_IDLE = 0,
 	TTY_CONSOLE,
+	TTY_UPDATE,
 	TTY_MODBUS
 };
 
@@ -134,6 +135,8 @@ unsigned long simple_strtoul(const char *cp,char **endp,unsigned int base);
 u32 GetLockCode(char *id);
 int mk_reg (int flag);
 S16 check_reg (void);
+
+void update_finished (void);
 
 void Rollback(void);
 
