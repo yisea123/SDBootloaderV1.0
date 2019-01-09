@@ -27,6 +27,55 @@ void uart1_puts(const char *s)
 
 void uart1_dma_config (void)
 {
+	DMA_InitTypeDef DMA_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+	
+	//---------------------串口功能配置---------------------   
+	//启动DMA时钟  
+	RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);  
+	
+	//串口收DMA配置    
+   //启动DMA时钟  
+   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);  
+   //DMA1通道5配置  
+   DMA_DeInit(DMA1_Channel5);  
+   //外设地址  
+   DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)(&USART1->DR);  
+   //内存地址  
+   DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)&cmd_analyze;  
+   //dma传输方向单向  
+   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;  
+   //设置DMA在传输时缓冲区的长度  
+   DMA_InitStructure.DMA_BufferSize = CMD_BUF_LEN;  
+   //设置DMA的外设递增模式，一个外设  
+   DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;  
+   //设置DMA的内存递增模式  
+   DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;  
+   //外设数据字长  
+   DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;  
+   //内存数据字长  
+   DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;  
+   //设置DMA的传输模式  
+   DMA_InitStructure.DMA_Mode = DMA_Mode_Circular;  
+   //设置DMA的优先级别  
+   DMA_InitStructure.DMA_Priority = DMA_Priority_High;  
+   //设置DMA的2个memory中的变量互相访问  
+   DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;  
+   DMA_Init(DMA1_Channel5,&DMA_InitStructure);  
+	 
+	DMA_ITConfig(DMA1_Channel5, DMA_IT_TC | DMA_IT_HT, ENABLE); //传输结束中断
+
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = DMA1_1_INT_PREEM;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = DMA1_1_INT_SUB;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+
+	NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel5_IRQn;
+	NVIC_Init(&NVIC_InitStructure);
+
+   //使能通道5  
+   DMA_Cmd(DMA1_Channel5,ENABLE);  
+   //采用DMA方式接收  
+   USART_DMACmd(USART1,USART_DMAReq_Rx,ENABLE);  
 }
 //串口1 DMA方式发送中断  
 void DMA1_Channel4_IRQHandler(void)  
@@ -59,6 +108,20 @@ void start_uart3_dma (u32 _memBaseAddr, U16 _size)
 	DMA_Cmd(DMA1_Channel2, ENABLE);  
 	USART_DMACmd(USART3,USART_DMAReq_Tx,ENABLE); //使能串口1的DMA发送   
 }
+//
+void DMA1_Channel5_IRQHandler(void)
+{	
+	static uint16_t i;
+	if(DMA_GetITStatus(DMA1_IT_HT5)){
+		i += 1;
+	}else if(DMA_GetITStatus(DMA1_IT_TC5)){
+		i += 100;
+	}else if (DMA_GetITStatus(DMA1_IT_TE5)){
+		i += 1000;
+	}
+	DMA_ClearITPendingBit(DMA1_IT_GL5); //清除全部中断标志
+}
+//
 void uart1_init (void)
 {
 	//GPIO端口设置
@@ -114,11 +177,12 @@ void start_uart1_receive (void)
 {        
 	//设置传输数据长度  
 	memset (cmd_analyze.rec_buf, 0, CMD_BUF_LEN);
-    DMA_Cmd(DMA1_Channel5,DISABLE);
-    DMA_SetCurrDataCounter(DMA1_Channel5, CMD_BUF_LEN);  
-    DMA_Cmd(DMA1_Channel5,ENABLE);
+	DMA_Cmd(DMA1_Channel5,DISABLE);
+	DMA_SetCurrDataCounter(DMA1_Channel5, CMD_BUF_LEN);  
+	DMA_Cmd(DMA1_Channel5,ENABLE);
 	USART_ITConfig(USART1,USART_IT_IDLE, ENABLE); //开启串口空闲中断 
 }
+//
 
 
 #if EN_USART1_RX   //如果使能了接收
@@ -126,12 +190,12 @@ void start_uart1_receive (void)
 void USART1_IRQHandler(void)                                 
 {     
     uint32_t temp = 0;    
-    if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET)  
-    {  
+    if(USART_GetITStatus(USART1, USART_IT_IDLE) != RESET){  
       temp = USART1->SR;  
       temp = USART1->DR; //清USART_IT_IDLE标志  
 			if (my_env.tty){
-				fill_rec_buf(temp);
+				my_env.uart0_cmd_flag = 1; 	
+				//fill_rec_buf(temp);
 			}else if (temp == ' '){
 				my_env.tty_ctr++;
 				if (my_env.tty_ctr > 5){

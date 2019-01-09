@@ -2,7 +2,6 @@
 
 iapfun jump2app; 
 u16 iapbuf[1024];   
-u16 spibuf[2048];  
 void iap_write_appbin(u32 appxaddr,u8 *appbuf,u32 appsize)
 {
 	u16 t;
@@ -88,7 +87,7 @@ int iap_func (char *app_name, int opt)
 	u32 app_size = 0;
 	U16 hex_data_len = 0;
 	U16 len_temp = 492;
-	int i = 0, index = 0, spi_index = 0;
+	int i = 0, index = 0;
 	FATFS fs;
 	FIL file;
 	FRESULT Res;	
@@ -150,7 +149,6 @@ int iap_func (char *app_name, int opt)
 			case 0x00://data
 				for (i = 0; i < p_hex.len; i += 2){
 					iapbuf[index++] = p_hex.data[i] | p_hex.data[i+1] << 8;
-					spibuf[spi_index++] = p_hex.data[i] | p_hex.data[i+1] << 8;
 					app_size += 2;
 				}
 				if (index == 1024){

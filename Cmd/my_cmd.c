@@ -406,41 +406,91 @@ int run_command (const char *cmd, int flag)
 const char username[] = "87d759ae8067f1e75b3b47f0ac33a9ca" ;
 const char password[] = "16a33002a44d9e5ba3ea92ce0371ddc1";
 
-void vTaskCmdAnalyze( void )  
-{ 
-	if (my_env.login_state == LOGIN_IN){
-		if (run_command (cmd_analyze.rec_buf, 0) < 0)
-		{
-			//my_println ("run_command exec failed");
+void wait_input (void)
+{
+	uint32_t uart1_rec_count = 0;   
+	uint8_t last_byte = 0;
+	start_uart1_receive ();
+	while (1){
+		if (my_env.uart0_cmd_flag == 1){
+			uart1_rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA1_Channel5); 
+			last_byte = cmd_analyze.rec_buf[uart1_rec_count - 1];
+			if (last_byte == 0x0D){
+				cmd_analyze.rec_buf[uart1_rec_count - 1] = 0;
+				my_println ();
+				break;
+			}else{
+				my_env.uart0_cmd_flag = 0;
+			}
 		}
-		cmd();
+	}
+	my_env.uart0_cmd_flag = 0;
+}
+
+void login (char * user, char * pwd)
+{
+	char hash[16];
+	if (strcmp (user, "null") == 0){
+		my_print ("username:");
+		wait_input ();
+		strcpy (my_env.username, cmd_analyze.rec_buf);
 	}else{
-		if (my_env.login_state == LOGIN_USERNAME){
-			strcpy (my_env.username, cmd_analyze.rec_buf);
-			my_env.login_state = LOGIN_PASSWORD;
-			my_print("Password:");
-		}else if (my_env.login_state == LOGIN_PASSWORD){
-			char hash[16];
-			strcpy (my_env.password, cmd_analyze.rec_buf);
-			
-			MD5Digest(my_env.username, hash);
-			sprintf (my_env.username, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
-				hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], 
-				hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
-				);
-			MD5Digest(my_env.password, hash);
-			sprintf (my_env.password, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
-				hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], 
-				hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
-				);
-			
-			if ((strcmp (username, my_env.username) == 0) && (strcmp (password, my_env.password) == 0)){
-				my_env.login_state = LOGIN_IN;
+		strcpy (my_env.username, user);
+	}
+	if (strcmp (pwd, "null") == 0){
+		my_print ("password:");
+		my_env.login_state = LOGIN_PASSWORD;
+		wait_input ();
+		strcpy (my_env.password, cmd_analyze.rec_buf);
+	}else{
+		strcpy (my_env.password, pwd);
+	}
+		
+	MD5Digest(my_env.username, hash);
+	sprintf (my_env.username, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
+		hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], 
+		hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
+		);
+	MD5Digest(my_env.password, hash);
+	sprintf (my_env.password, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
+		hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7], 
+		hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
+		);
+	
+	if ((strcmp (username, my_env.username) == 0) && (strcmp (password, my_env.password) == 0)){
+		my_env.login_state = LOGIN_IN;
+		my_println("Login In successfully ^_^");
+	}else{
+		my_env.login_state = LOGIN_USERNAME;
+		my_println("Username or Password not correct, try again!");
+	}
+}
+                            
+void vTaskCmdAnalyze( void )  
+{                       
+	uint32_t uart1_rec_count = 0;   
+	uint8_t last_byte = 0;
+	uart1_rec_count = CMD_BUF_LEN - DMA_GetCurrDataCounter(DMA1_Channel5); 
+	if (cmd_analyze.rec_buf[uart1_rec_count - 1] == CTRL_C && my_env.tty == TTY_CONSOLE){
+		my_env.sys_break = 1;
+	}else{
+		my_env.tty = TTY_CONSOLE;//Ä¬ÈÏconsole×´Ì¬
+		if (my_env.tty == TTY_CONSOLE){//console
+			last_byte = cmd_analyze.rec_buf[uart1_rec_count - 1];
+			if (last_byte == 0x0D){
+				cmd_analyze.rec_buf[uart1_rec_count - 1] = 0;
+				my_println();
+				if (run_command (cmd_analyze.rec_buf, 0) < 0){
+						//my_println ("run_command exec failed");
+				}
+				start_uart1_receive ();
 				cmd();
 			}else{
-				my_env.login_state = LOGIN_USERNAME;
-				my_println("Username or Password not correct, try again!");
-				my_print("Login:");
+				if (isprint (cmd_analyze.rec_buf[uart1_rec_count - 1])){
+					uart1_send_data(cmd_analyze.rec_buf[uart1_rec_count - 1]);	
+				}else{
+					uart1_send_data ('*');
+				}
 			}
 		}
 	}
@@ -487,9 +537,6 @@ void fill_rec_buf(char data)
 					uart1_send_data('\b');
 					uart1_send_data(' ');
 					uart1_send_data('\b');
-//					uart1_send_data (0x1b);
-//					uart1_send_data (0x5b);
-//					uart1_send_data (0x44);
 				}
 				rec_count--;
 				cmd_analyze.rec_buf[rec_count] = ' ';
@@ -499,12 +546,12 @@ void fill_rec_buf(char data)
 		if (my_env.login_state != LOGIN_PASSWORD){
 			uart1_send_data(data);   
 		}			
-		if(0x0D == data){// && 0x0D==cmd_analyze.rec_buf[rec_count-1])      
+		if(0x0D == data){// && 0x0D==cmd_analyze.rec_buf[rec_count-1])     
+			cmd_analyze.rec_buf[rec_count] = '\0';   
 			if (rec_count > 0) {				
-				cmd_analyze.rec_buf[rec_count] = '\0';  
 				//my_println ("rec_count = %d", rec_count);  
 				rec_count=0;    
-			}	  
+			} 
 			uart1_send_data('\n');
 			my_env.uart0_cmd_flag = 1; 	
 			//my_println ("rec_count = %d", rec_count);
@@ -980,7 +1027,7 @@ MY_CMD(
 	"run - run app\n",
 	"run\n"
 );
-
+//
 int do_print_version  (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	my_println("\n----------------------------------------------------");
@@ -993,7 +1040,36 @@ MY_CMD(
 	"version - print version information\n",
 	"version\n"
 );
-
+//
+int do_login  (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	switch (argc){
+		case 1:
+			login ("null", "null");
+		case 2:
+			if (strcmp (argv[1], "out") == 0){
+				my_env.login_state = LOGIN_USERNAME;
+			}else if (strcmp (argv[1], "status") == 0){
+				if (my_env.login_state == LOGIN_IN){
+					my_println ("Login In ^_^");
+				}else{
+					my_println ("Login Out -_-");
+				}
+			}
+			break;
+		case 3:
+			login (argv[1], argv[2]);
+			break;
+		default: cmd_usage (cmdtp);break;
+	}
+	return 0;
+}
+MY_CMD(
+	login,	4,	1,	do_login,
+	"login - login to system\n",
+	"login username pwd\n"
+);
+//
 
 int do_fdisk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
@@ -1079,33 +1155,37 @@ int mk_reg (int flag)
 	char id[32];
 	char hash[16];
 	int i;
-	p_reg_file = malloc (sizeof (s_reg_file));
-	if (p_reg_file == NULL){
-		my_println ("malloc p_reg_file failed!");
-		return -1;
-	}
-	memset (id, 0, sizeof(id));
-	GetLockCode (id);
-	MD5Digest(id, hash);
-	//hash:716CA8A3 433C6F50 E09400E1 B615B636
-	get_reg (p_reg_file);
-	my_println("reg ID: %s", id);
+	if (my_env.login_state == LOGIN_IN){
+		p_reg_file = malloc (sizeof (s_reg_file));
+		if (p_reg_file == NULL){
+			my_println ("malloc p_reg_file failed!");
+			return -1;
+		}
+		memset (id, 0, sizeof(id));
+		GetLockCode (id);
+		MD5Digest(id, hash);
+		//hash:716CA8A3 433C6F50 E09400E1 B615B636
+		get_reg (p_reg_file);
+		my_println("reg ID: %s", id);
 
-	for (i = 0; i < 16; i++){
-		p_reg_file->reg_info[i] = hash[i];
+		for (i = 0; i < 16; i++){
+			p_reg_file->reg_info[i] = hash[i];
+		}
+		if (flag == 0){
+			my_println("Clear reg info");
+			memset (p_reg_file->reg_info, 0xFF, 16);
+		}
+		my_print("reg info: ");
+		for (i = 0; i < 16; i++){
+			my_print("%x", p_reg_file->reg_info[i]);
+		}
+		my_println ();
+		write_reg (p_reg_file);
+		if (p_reg_file != NULL)
+			free (p_reg_file);
+	}else{
+		my_println ("Please Login First!");
 	}
-	if (flag == 0){
-		my_println("Clear reg info");
-		memset (p_reg_file->reg_info, 0xFF, 16);
-	}
-	my_print("reg info: ");
-	for (i = 0; i < 16; i++){
-		my_print("%x", p_reg_file->reg_info[i]);
-	}
-	my_println ();
-	write_reg (p_reg_file);
-	if (p_reg_file != NULL)
-		free (p_reg_file);
 	return 0;
 }
 int do_mk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
@@ -1177,6 +1257,57 @@ MY_CMD(
 	mk,	4,	1,	do_mk,
 	"mk - new file\n",
 	"mk filename text\n"
+);
+//
+
+int do_id (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	char id[32];
+	GetLockCode (id);
+	my_println("reg ID: %s", id);
+	return 0;
+}
+
+
+MY_CMD(
+	id,	4,	1,	do_id,
+	"id - view Id\n",
+	"id \n"
+);
+
+void write_reset (void)
+{
+}
+//
+void write_start (void)
+{
+	start_uart1_receive ();
+}
+//
+
+
+int do_write (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	switch (argc){
+		case 2:
+			if (strcmp (argv[1], "reset") == 0){
+				write_reset ();
+				//my_println ("write reset complete");
+			}else if (strcmp (argv[1], "start") == 0){
+				write_start ();
+				//my_println ("write start complete");
+			}
+			break;
+		default: cmd_usage (cmdtp);break;
+	}
+	return 0;
+}
+
+
+MY_CMD(
+	write,	4,	1,	do_write,
+	"write - write cmd\n",
+	"write reset \n"
 );
 
 

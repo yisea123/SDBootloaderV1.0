@@ -88,6 +88,7 @@ int main (void)
 	}
 	
 	my_env.roll_count = 0;
+	my_env.tty = 1;
 	while (wait_time){
 		if (my_env.tty == 1){
 			start_uart1_receive ();
@@ -106,11 +107,7 @@ int main (void)
 	}
 	Rollback ();
 	my_println ("Start App after... %d", wait_time);
-	if (my_env.tty == 0){
-		cmd ();
-	}else{
-		my_print ("Login:");
-	}
+	cmd ();
 	while (my_env.tty){
 		if (my_env.uart0_cmd_flag == 1){ 
 			my_env.uart0_cmd_flag = 0;			

@@ -67,17 +67,22 @@ typedef struct
 	char  *help;                                 //帮助信息  
 }cmd_list_struct; 
 
-
-#define ARG_NUM     8          //命令中允许的参数个数  
-#define CMD_LEN     20         //命令名占用的最大字符长度  
-#define CMD_BUF_LEN 60         //命令缓存的最大长度  
+#define _CMD_BUF_LEN 2048
+#define  CMD_BUF_LEN _CMD_BUF_LEN*2         //命令缓存的最大长度  
        
 typedef struct 
 {  
-	char rec_buf[CMD_BUF_LEN];            //接收命令缓冲区  
-	char processed_buf[CMD_BUF_LEN];      //存储加工后的命令(去除控制字符)  
-	int32_t cmd_arg[ARG_NUM];             //保存命令的参数  
-}cmd_analyze_struct;  
+	char rec_buf0[_CMD_BUF_LEN];            //接收命令缓冲区  
+	char rec_buf1[_CMD_BUF_LEN];            //接收命令缓冲区  
+//	char processed_buf[CMD_BUF_LEN];      //存储加工后的命令(去除控制字符)  
+//	int32_t cmd_arg[ARG_NUM];             //保存命令的参数  
+}s_cmd_analyze_struct;  
+
+typedef union
+{
+	char rec_buf[CMD_BUF_LEN];
+	s_cmd_analyze_struct data;
+}cmd_analyze_struct;
 
 enum
 {
