@@ -1156,7 +1156,7 @@ int mk_reg (int flag)
 	s_reg_file *p_reg_file = NULL;
 	char id[32];
 	char hash[16];
-	char reg_temp[REG_SIZE];
+	//char reg_temp[REG_SIZE];
 	int i;
 	if (my_env.login_state == LOGIN_IN){
 		p_reg_file = malloc (sizeof (s_reg_file));
@@ -1167,24 +1167,24 @@ int mk_reg (int flag)
 		memset (id, 0, sizeof(id));
 		GetLockCode (id);
 		MD5Digest(id, hash);
-		sprintf((char *)reg_temp, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-			hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
-			hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
-		);
+//		sprintf((char *)reg_temp, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+//			hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
+//			hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
+//		);
 		//hash:716CA8A3 433C6F50 E09400E1 B615B636
 		get_reg (p_reg_file);
 		my_println("reg ID: %s", id);
 
 		for (i = 0; i < REG_SIZE; i++){
-			p_reg_file->reg_info[i] = reg_temp[i];
+			p_reg_file->reg_info[i] = hash[i];
 		}
 		if (flag == 0){
 			my_println("Clear reg info");
-			memset (p_reg_file->reg_info, 'A', REG_SIZE);
+			memset (p_reg_file->reg_info, 0xFF, REG_SIZE);
 		}
 		my_print("reg info: ");
 		for (i = 0; i < REG_SIZE; i++){
-			my_print("%c", p_reg_file->reg_info[i]);
+			my_print("%02x", p_reg_file->reg_info[i]);
 		}
 		my_println ();
 		write_reg (p_reg_file);
