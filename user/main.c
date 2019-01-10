@@ -37,7 +37,7 @@ static void start_lua() {
 
 int main (void)
 {
-	int wait_time = 3;
+	int wait_time = 3*10;
 	delay_init();	    	 //延时函数初始化	
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);//设置中断优先级分组为组2：2位抢占优先级，2位响应优先级
 	uart1_init ();
@@ -87,29 +87,21 @@ int main (void)
 		check_reg ();
 	}
 	
+	my_println ("App will Auto Start After 3 Sec...!",);
 	my_env.roll_count = 0;
-	my_env.tty = 1;
+	//my_env.tty = 1;
 	while (wait_time){
 		if (my_env.tty == 1){
 			start_uart1_receive ();
 			break;
 		}
-		Rollback ();
-		my_println ("Start App after... %d", wait_time--);
-		delay_ms (250);
-		LED2 = !LED2;
-		delay_ms (250);
-		LED2 = !LED2;
-		delay_ms (250);
-		LED2 = !LED2;
-		delay_ms (250);
+		wait_time--;
+		delay_ms (100);
 		LED2 = !LED2;
 	}
-	Rollback ();
-	my_println ("Start App after... %d", wait_time);
 	cmd ();
 	while (my_env.tty){
-		if (my_env.uart0_cmd_flag == 1){ 
+		if (my_env.uart0_cmd_flag == 1){
 			my_env.uart0_cmd_flag = 0;		
 			if (my_env.tty == TTY_CONSOLE){
 				vTaskCmdAnalyze ();
@@ -121,8 +113,6 @@ int main (void)
 		LED2 = !LED2;	
 	}
 	my_println ();
-	if (iap_func (DEFAULT_APP_FILE_NAME, 1) != 0){
-	}
 	start_app ();
 	while (1);
 

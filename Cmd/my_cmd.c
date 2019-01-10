@@ -1046,6 +1046,7 @@ int do_login  (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	switch (argc){
 		case 1:
 			login ("null", "null");
+			break;
 		case 2:
 			if (strcmp (argv[1], "out") == 0){
 				my_env.login_state = LOGIN_USERNAME;
@@ -1055,10 +1056,11 @@ int do_login  (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 				}else{
 					my_println ("Login Out -_-");
 				}
+			}else{
+				login (argv[1], "null");
 			}
 			break;
 		case 3:
-			login (argv[1], argv[2]);
 			break;
 		default: cmd_usage (cmdtp);break;
 	}
@@ -1134,13 +1136,13 @@ void get_reg (s_reg_file *p_reg_file)
 //	W25QXX_Read ((U8*)p_reg_file, FLASH_REG_INFO_ADDR, sizeof(s_reg_file));
 	STMFLASH_Read (FLASH_REG_INFO_ADDR, (uint16_t *)p_reg_file, sizeof(s_reg_file) / 2);
 	my_println ();
-	my_println ("-------------------------------------------------------");
+	my_println ("-----------------------------------------------------------------");
 	my_print("read reg info: ");
 	for (i = 0; i < 16; i++){
-		my_print("%x", p_reg_file->reg_info[i]);
+		my_print("%c", p_reg_file->reg_info[i]);
 	}
 	my_println ();
-	my_println ("-------------------------------------------------------");
+	my_println ("-----------------------------------------------------------------");
 }
 void write_reg (s_reg_file *p_reg_file)
 {
@@ -1154,6 +1156,7 @@ int mk_reg (int flag)
 	s_reg_file *p_reg_file = NULL;
 	char id[32];
 	char hash[16];
+	char reg_temp[REG_SIZE];
 	int i;
 	if (my_env.login_state == LOGIN_IN){
 		p_reg_file = malloc (sizeof (s_reg_file));
@@ -1164,20 +1167,24 @@ int mk_reg (int flag)
 		memset (id, 0, sizeof(id));
 		GetLockCode (id);
 		MD5Digest(id, hash);
+		sprintf((char *)reg_temp, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+			hash[0], hash[1], hash[2], hash[3], hash[4], hash[5], hash[6], hash[7],
+			hash[8], hash[9], hash[10], hash[11], hash[12], hash[13], hash[14], hash[15]
+		);
 		//hash:716CA8A3 433C6F50 E09400E1 B615B636
 		get_reg (p_reg_file);
 		my_println("reg ID: %s", id);
 
-		for (i = 0; i < 16; i++){
-			p_reg_file->reg_info[i] = hash[i];
+		for (i = 0; i < REG_SIZE; i++){
+			p_reg_file->reg_info[i] = reg_temp[i];
 		}
 		if (flag == 0){
 			my_println("Clear reg info");
-			memset (p_reg_file->reg_info, 0xFF, 16);
+			memset (p_reg_file->reg_info, 'A', REG_SIZE);
 		}
 		my_print("reg info: ");
-		for (i = 0; i < 16; i++){
-			my_print("%x", p_reg_file->reg_info[i]);
+		for (i = 0; i < REG_SIZE; i++){
+			my_print("%c", p_reg_file->reg_info[i]);
 		}
 		my_println ();
 		write_reg (p_reg_file);
@@ -1259,7 +1266,6 @@ MY_CMD(
 	"mk filename text\n"
 );
 //
-
 int do_id (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	char id[32];
@@ -1267,15 +1273,16 @@ int do_id (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	my_println("reg ID: %s", id);
 	return 0;
 }
-
-
 MY_CMD(
 	id,	4,	1,	do_id,
 	"id - view Id\n",
 	"id \n"
 );
-static uint16_t recv_crc_value = 0;
+//
 static uint16_t pre_crc_value = 0;
+static uint16_t recv_crc_value = 0;
+
+static uint32_t IAP_flash_addr = 0;
 /*
 * ∫Ø ˝√˚ :CRC16
 * √Ë ˆ : º∆À„CRC16
@@ -1305,33 +1312,34 @@ uint16_t CRC16(uint16_t pre_crc, char *ptr, uint16_t len)
 }
 void write_reset (void)
 {
-	pre_crc_value = 0xFFFF;
 }
 //
-void write_start (void)
+void write_app_op (uint16 crc_t)
 {
+	pre_crc_value = 0xFFFF;
+	IAP_flash_addr = FLASH_APP1_ADDR;
+	recv_crc_value = crc_t;
+	my_env.tty = TTY_UPDATE;
+	start_uart1_receive ();
+}
+//
+void write_config_op (uint16 crc_t)
+{
+	pre_crc_value = 0xFFFF;
+	IAP_flash_addr = FLASH_REG_INFO_ADDR;
+	recv_crc_value = crc_t;
 	my_env.tty = TTY_UPDATE;
 	start_uart1_receive ();
 }
 //
 void write_to_app_space (char * data, uint16_t len)
 {
-	uint16_t crc_value_tmp;
-	uint16_t crc_value_tmp1;
-	
-	crc_value_tmp = ((data[len - 2]<< 8) | (data[len - 1]));
-	//my_println ("crc_value_tmp %04x", crc_value_tmp);
-	crc_value_tmp1 = CRC16(pre_crc_value, data, len - 2);
-	//my_println ("crc_value_tmp1 %04x", crc_value_tmp1);
-	if (crc_value_tmp == crc_value_tmp1){
-		//my_println ("last piece");
-		//my_println ("%04x", crc_value_tmp);
-		recv_crc_value = crc_value_tmp;
-		pre_crc_value = crc_value_tmp1;
-	}else{
+	//if ((IAP_flash_addr < 0x08070000) && (IAP_flash_addr >= FLASH_APP1_ADDR)){
 		pre_crc_value = CRC16(pre_crc_value, data, len);
-	}
-	memset (data, 0, _CMD_BUF_LEN);
+		STMFLASH_Write(IAP_flash_addr, (u16 *)data, len >> 1);	
+		IAP_flash_addr += len;
+		memset (data, 0, _CMD_BUF_LEN);
+	//}
 }
 //
 void update_finished (void)
@@ -1346,26 +1354,24 @@ void update_finished (void)
 		p_data = cmd_analyze.data.rec_buf1;
 	}
 	uart1_rec_count %= 2048;
-	if (uart1_rec_count > 1){
+	if (uart1_rec_count > 0){
 		my_println ("have data here");
-		//my_println ("%02x%02x", p_data[uart1_rec_count-2], p_data[uart1_rec_count-1]);
-		recv_crc_value = (p_data[uart1_rec_count-2] << 8) | (p_data[uart1_rec_count-1]);
-		if (uart1_rec_count > 2){
-			write_to_app_space (p_data, uart1_rec_count-2);
-		}
-	}else if (uart1_rec_count == 1){
-		my_println ("bin file not correct!!!");
+		write_to_app_space (p_data, uart1_rec_count);
 	}else{
 		my_println ("no data here");
 	}
-	my_println ("recv_crc_value %04x", recv_crc_value);
-	my_println ("pre_crc_value  %04x", pre_crc_value);
+	my_println ("Received CRC  :%04x", recv_crc_value);
+	my_println ("Calculator CRC:%04x", pre_crc_value);
 	if (recv_crc_value == pre_crc_value){
-		my_println ("update complete!");
+		my_println ("Update Complete!");
+		run_command ("run", 0);
 	}else{
-		my_println ("receive data error, please update again!!!");
+		my_println ("Receive Data Error, Please Update Again!!!");
 	}
+	IAP_flash_addr = 0xFFFFFFFF;
 	my_env.tty = TTY_CONSOLE;
+	cmd ();
+	start_uart1_receive ();
 }
 int do_write (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
@@ -1374,9 +1380,14 @@ int do_write (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			if (strcmp (argv[1], "reset") == 0){
 				write_reset ();
 				//my_println ("write reset complete");
-			}else if (strcmp (argv[1], "start") == 0){
-				write_start ();
+			}
+			break;
+		case 3:
+			if (strcmp (argv[1], "app") == 0){
+				write_app_op (simple_strtoul(argv[2], NULL, 10));
 				//my_println ("write start complete");
+			}else if (strcmp (argv[1], "config") == 0){
+				write_config_op (simple_strtoul(argv[2], NULL, 10));
 			}
 			break;
 		default: cmd_usage (cmdtp);break;

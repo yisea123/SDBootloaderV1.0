@@ -20,8 +20,9 @@ typedef struct{
 	U8 sum_check;
 }s_hex_file;
 
+#define REG_SIZE 32
 typedef struct{
-	char reg_info[16];
+	char reg_info[REG_SIZE];
 }s_reg_file;
 
 

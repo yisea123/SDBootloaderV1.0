@@ -199,9 +199,19 @@ void start_app (void)
 		my_println("Start App...");
 		iap_load_app(FLASH_APP1_ADDR);//Ö´ÐÐFLASH APP´úÂë
 	}else{
-		my_println("FLASH APP Invalid, stop!");  
+		my_println("FLASH APP Invalid, stop!");
+		cmd ();
+		my_env.tty = TTY_CONSOLE;
 		GPIO_SetBits(GPIOB, LED1_MAP | LED2_MAP | LED3_MAP);	 
 		while (1){
+			if (my_env.uart0_cmd_flag == 1){
+				my_env.uart0_cmd_flag = 0;		
+				if (my_env.tty == TTY_CONSOLE){
+					vTaskCmdAnalyze ();
+				}else if (my_env.tty == TTY_UPDATE){
+					update_finished ();
+				}
+			}
 			delay_ms (200);
 			LED1 = !LED1;	
 			LED2 = !LED2;	
