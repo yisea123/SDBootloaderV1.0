@@ -23,6 +23,8 @@ typedef struct{
 #define REG_SIZE 16
 typedef struct{
 	char reg_info[REG_SIZE];
+	uint32_t time_limit;
+	uint32_t time_use;
 }s_reg_file;
 
 

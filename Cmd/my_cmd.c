@@ -769,6 +769,7 @@ MY_CMD(
 	"print da 2\nprint da all\n"
 );
 
+void set_limit_time (uint32 limit_time);
 int do_set (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
 	U16 data_temp;
@@ -791,6 +792,10 @@ int do_set (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 				}else{
 					my_println ("print value must be 0 or 1");
 				}
+				break;
+			}else if (strcmp (argv[1], "limit") == 0){
+				data_temp = simple_strtoul(argv[2], NULL, 10);
+				set_limit_time (data_temp);
 				break;
 			}
 			cmd_usage (cmdtp);
@@ -1139,7 +1144,7 @@ void get_reg (s_reg_file *p_reg_file)
 	my_println ("-----------------------------------------------------------------");
 	my_print("read reg info: ");
 	for (i = 0; i < 16; i++){
-		my_print("%c", p_reg_file->reg_info[i]);
+		my_print("%02x", p_reg_file->reg_info[i]);
 	}
 	my_println ();
 	my_println ("-----------------------------------------------------------------");
@@ -1150,7 +1155,34 @@ void write_reg (s_reg_file *p_reg_file)
 	STMFLASH_Write (FLASH_REG_INFO_ADDR, (uint16_t *)p_reg_file, sizeof(s_reg_file) / 2);
 	my_println ("write reg file");
 }
-
+void set_limit_time (uint32_t limit_time)
+{
+	s_reg_file *p_reg_file = NULL;
+	uint16_t day, hour, min, sec, less_time;
+	if (my_env.login_state == LOGIN_IN){
+		p_reg_file = malloc (sizeof (s_reg_file));
+		if (p_reg_file == NULL){
+			my_println ("malloc p_reg_file failed!");
+		}
+		get_reg (p_reg_file);
+		
+		p_reg_file->time_limit = limit_time;
+		p_reg_file->time_use = 0;
+		
+		less_time = p_reg_file->time_limit - p_reg_file->time_use;
+		day = less_time / (24 * 3600);
+		hour = (less_time - (day * 24 * 3600)) / (3600);
+		min = (less_time - (day * 24 * 3600) - (hour * 3600)) / 60;
+		sec = (less_time - (day * 24 * 3600) - (hour * 3600) - (min * 60));
+		my_println ("Remain use time: %d day %d hour %d min %d sec", day, hour, min, sec);
+		
+		write_reg (p_reg_file);
+		if (p_reg_file != NULL)
+			free (p_reg_file);
+	}else{
+		my_println ("Please Login First!");
+	}
+}
 int mk_reg (int flag)
 {
 	s_reg_file *p_reg_file = NULL;
