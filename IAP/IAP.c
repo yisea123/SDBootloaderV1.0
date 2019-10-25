@@ -82,103 +82,104 @@ int get_hex_struct (s_hex_file *p_hex, char *_data_buf)
 #define BUFF_SIZE 64
 int iap_func (char *app_name, int opt)
 {
-	u32 flash_addr = 0;
-	
-	u32 app_size = 0;
-	U16 hex_data_len = 0;
-	U16 len_temp = 492;
-	int i = 0, index = 0;
-	FATFS fs;
-	FIL file;
-	FRESULT Res;	
-  FILINFO fno;
-	char buf[BUFF_SIZE];
-	s_hex_file p_hex;
-	
-	memset (&fno, 0, sizeof (FILINFO));
-	
-//	W25QXX_Read ((U8*)&p_reg_file, SPI_FLASH_INFO_ADDR, sizeof(s_reg_file));
-	my_println ("Start Update App");
-	Res = f_mount(&fs, "0:" , 1);	
-	
-	Res =  f_open(&file, app_name, FA_READ);
-	if (Res != FR_OK){
-		my_print("Open file %s failed, ", app_name);	
-		my_println("Res = %d", Res);
-		return -1;
-	}else{
-		if (opt == 1){
-			Res = f_stat(app_name, &fno);
-			if(fno.fattrib & AM_RDO){
-				my_println ("No Need to Update!");
-				return FR_OK;
-			}
-		}
-		/*
-		
-        my_println("Size: %lu", fno.fsize);
-        my_println("Timestamp: %u/%02u/%02u, %02u:%02u",
-               (fno.fdate >> 9) + 1980, fno.fdate >> 5 & 15, fno.fdate & 31,
-               fno.ftime >> 11, fno.ftime >> 5 & 63);
-        my_println("Attributes: %c%c%c%c%c",
-               (fno.fattrib & AM_DIR) ? 'D' : '-',
-               (fno.fattrib & AM_RDO) ? 'R' : '-',
-               (fno.fattrib & AM_HID) ? 'H' : '-',
-               (fno.fattrib & AM_SYS) ? 'S' : '-',
-               (fno.fattrib & AM_ARC) ? 'A' : '-');
-		strcpy(buf, "/");
-		Res = f_opendir(&dir, buf);              
-		Res = scan_files(buf);
-		get_fileinfo (&dir, &fno);*/
-	}
-	Res = FR_INVALID_OBJECT;
-	for (;;){
-		if (f_eof(&file))
-			break;
-		f_gets (buf, 64, &file);
-		hex_data_len++;
-		if (hex_data_len == len_temp)
-		{
-			len_temp = 0;
-		}
-		if (get_hex_struct (&p_hex, buf)){//文件错误
-			my_println ("Load App failed!");
-			return Res;
-		}
-		switch (p_hex.type){
-			case 0x00://data
-				for (i = 0; i < p_hex.len; i += 2){
-					iapbuf[index++] = p_hex.data[i] | p_hex.data[i+1] << 8;
-					app_size += 2;
-				}
-				if (index == 1024){
-					index = 0;
-					STMFLASH_Write(flash_addr,iapbuf,1024);	
-					flash_addr += 2048;
-					LED1 = !LED1;
-				}
-				break;
-			case 0x01://end
-				Res = FR_OK;
-				break;
-			case 0x04://ex addr
-				flash_addr = (p_hex.data[0]<< 8 | p_hex.data[1]) << 16;
-				if (flash_addr < FLASH_APP1_ADDR){//否则会覆盖bootloader
-					my_println ("App Runtime Addr Error!");
-					return Res;
-				}
-				break;
-			default:break;
-		}
-	}
-	if (index != 0){
-		STMFLASH_Write(flash_addr,iapbuf,index);//将最后的一些内容字节写进去.  
-	}
-	if (opt == 1){
-		f_chmod(app_name, AM_RDO, AM_RDO | AM_ARC);
-	}
-	f_close(&file);
-	return Res;
+//	u32 flash_addr = 0;
+//	
+//	u32 app_size = 0;
+//	U16 hex_data_len = 0;
+//	U16 len_temp = 492;
+//	int i = 0, index = 0;
+//	FATFS fs;
+//	FIL file;
+//	FRESULT Res;	
+//  FILINFO fno;
+//	char buf[BUFF_SIZE];
+//	s_hex_file p_hex;
+//	
+//	memset (&fno, 0, sizeof (FILINFO));
+//	
+////	W25QXX_Read ((U8*)&p_reg_file, SPI_FLASH_INFO_ADDR, sizeof(s_reg_file));
+//	my_println ("Start Update App");
+//	Res = f_mount(&fs, "0:" , 1);	
+//	
+//	Res =  f_open(&file, app_name, FA_READ);
+//	if (Res != FR_OK){
+//		my_print("Open file %s failed, ", app_name);	
+//		my_println("Res = %d", Res);
+//		return -1;
+//	}else{
+//		if (opt == 1){
+//			Res = f_stat(app_name, &fno);
+//			if(fno.fattrib & AM_RDO){
+//				my_println ("No Need to Update!");
+//				return FR_OK;
+//			}
+//		}
+//		/*
+//		
+//        my_println("Size: %lu", fno.fsize);
+//        my_println("Timestamp: %u/%02u/%02u, %02u:%02u",
+//               (fno.fdate >> 9) + 1980, fno.fdate >> 5 & 15, fno.fdate & 31,
+//               fno.ftime >> 11, fno.ftime >> 5 & 63);
+//        my_println("Attributes: %c%c%c%c%c",
+//               (fno.fattrib & AM_DIR) ? 'D' : '-',
+//               (fno.fattrib & AM_RDO) ? 'R' : '-',
+//               (fno.fattrib & AM_HID) ? 'H' : '-',
+//               (fno.fattrib & AM_SYS) ? 'S' : '-',
+//               (fno.fattrib & AM_ARC) ? 'A' : '-');
+//		strcpy(buf, "/");
+//		Res = f_opendir(&dir, buf);              
+//		Res = scan_files(buf);
+//		get_fileinfo (&dir, &fno);*/
+//	}
+//	Res = FR_INVALID_OBJECT;
+//	for (;;){
+//		if (f_eof(&file))
+//			break;
+//		f_gets (buf, 64, &file);
+//		hex_data_len++;
+//		if (hex_data_len == len_temp)
+//		{
+//			len_temp = 0;
+//		}
+//		if (get_hex_struct (&p_hex, buf)){//文件错误
+//			my_println ("Load App failed!");
+//			return Res;
+//		}
+//		switch (p_hex.type){
+//			case 0x00://data
+//				for (i = 0; i < p_hex.len; i += 2){
+//					iapbuf[index++] = p_hex.data[i] | p_hex.data[i+1] << 8;
+//					app_size += 2;
+//				}
+//				if (index == 1024){
+//					index = 0;
+//					STMFLASH_Write(flash_addr,iapbuf,1024);	
+//					flash_addr += 2048;
+//					LED1 = !LED1;
+//				}
+//				break;
+//			case 0x01://end
+//				Res = FR_OK;
+//				break;
+//			case 0x04://ex addr
+//				flash_addr = (p_hex.data[0]<< 8 | p_hex.data[1]) << 16;
+//				if (flash_addr < FLASH_APP1_ADDR){//否则会覆盖bootloader
+//					my_println ("App Runtime Addr Error!");
+//					return Res;
+//				}
+//				break;
+//			default:break;
+//		}
+//	}
+//	if (index != 0){
+//		STMFLASH_Write(flash_addr,iapbuf,index);//将最后的一些内容字节写进去.  
+//	}
+//	if (opt == 1){
+//		f_chmod(app_name, AM_RDO, AM_RDO | AM_ARC);
+//	}
+//	f_close(&file);
+//	return Res;
+return 0;
 }
 
 //appxaddr:用户代码起始地址.

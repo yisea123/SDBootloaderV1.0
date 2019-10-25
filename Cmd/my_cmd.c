@@ -520,54 +520,54 @@ void print_system_env_info (void)
                                                     
 static uint32_t rec_count=0;   
 /*提供给串口中断服务程序，保存串口接收到的单个字符*/                                                                                                     
-void fill_rec_buf(char data)                                                           
-{                                                                                      
-    //接收数据                                                                         
- 
-#ifdef USE_LUA 
-	cmd_analyze.rec_buf[rec_count++] = data; 
-	if (rec_count > 0)
-		return;
-#endif
-	
-	if (my_env.uart0_cmd_flag == 0){
-		if (data == '\b'){
-			if (rec_count > 0){
-				if (my_env.login_state != LOGIN_PASSWORD){
-					uart1_send_data('\b');
-					uart1_send_data(' ');
-					uart1_send_data('\b');
-				}
-				rec_count--;
-				cmd_analyze.rec_buf[rec_count] = ' ';
-			}
-			return;
-		}
-		if (my_env.login_state != LOGIN_PASSWORD){
-			uart1_send_data(data);   
-		}			
-		if(0x0D == data){// && 0x0D==cmd_analyze.rec_buf[rec_count-1])     
-			cmd_analyze.rec_buf[rec_count] = '\0';   
-			if (rec_count > 0) {				
-				//my_println ("rec_count = %d", rec_count);  
-				rec_count=0;    
-			} 
-			uart1_send_data('\n');
-			my_env.uart0_cmd_flag = 1; 	
-			//my_println ("rec_count = %d", rec_count);
-			//vTaskCmdAnalyze (); 		                          
-		}else{                                    
-			cmd_analyze.rec_buf[rec_count] = data;                                                 
-			rec_count++;                                                                   																   
-		   /*防御性代码，防止数组越界*/                                                    
-		   if(rec_count>=CMD_BUF_LEN){                                                                               
-			   rec_count=0;                                                                
-		   }                                                                               
-		}     
-	}else{
-		rec_count = 0;
-	}
-} 
+//void fill_rec_buf(char data)                                                           
+//{                                                                                      
+//    //接收数据                                                                         
+// 
+//#ifdef USE_LUA 
+//	cmd_analyze.rec_buf[rec_count++] = data; 
+//	if (rec_count > 0)
+//		return;
+//#endif
+//	
+//	if (my_env.uart0_cmd_flag == 0){
+//		if (data == '\b'){
+//			if (rec_count > 0){
+//				if (my_env.login_state != LOGIN_PASSWORD){
+//					uart1_send_data('\b');
+//					uart1_send_data(' ');
+//					uart1_send_data('\b');
+//				}
+//				rec_count--;
+//				cmd_analyze.rec_buf[rec_count] = ' ';
+//			}
+//			return;
+//		}
+//		if (my_env.login_state != LOGIN_PASSWORD){
+//			uart1_send_data(data);   
+//		}			
+//		if(0x0D == data){// && 0x0D==cmd_analyze.rec_buf[rec_count-1])     
+//			cmd_analyze.rec_buf[rec_count] = '\0';   
+//			if (rec_count > 0) {				
+//				//my_println ("rec_count = %d", rec_count);  
+//				rec_count=0;    
+//			} 
+//			uart1_send_data('\n');
+//			my_env.uart0_cmd_flag = 1; 	
+//			//my_println ("rec_count = %d", rec_count);
+//			//vTaskCmdAnalyze (); 		                          
+//		}else{                                    
+//			cmd_analyze.rec_buf[rec_count] = data;                                                 
+//			rec_count++;                                                                   																   
+//		   /*防御性代码，防止数组越界*/                                                    
+//		   if(rec_count>=CMD_BUF_LEN){                                                                               
+//			   rec_count=0;                                                                
+//		   }                                                                               
+//		}     
+//	}else{
+//		rec_count = 0;
+//	}
+//} 
 int Uart_WaitChar (void)
 {
 	while (rec_count == 0);
@@ -855,81 +855,82 @@ FILINFO fileinfo;	//文件信息
 DIR dir;  			//目录
 u8 scan_files(u8 * path)
 {
-	FRESULT res;	  
-    char *fn;   /* This function is assuming non-Unicode cfg. */
-#if _USE_LFN
- 	fileinfo.lfsize = _MAX_LFN * 2 + 1;
-	fileinfo.lfname = malloc(fileinfo.lfsize);
-#endif		  
+//	FRESULT res;	  
+//    char *fn;   /* This function is assuming non-Unicode cfg. */
+//#if _USE_LFN
+// 	fileinfo.lfsize = _MAX_LFN * 2 + 1;
+//	fileinfo.lfname = malloc(fileinfo.lfsize);
+//#endif		  
 
-    res = f_opendir(&dir,(const TCHAR*)path); //打开一个目录
-    if (res == FR_OK) 
-	{	
-		printf("\r\n"); 
-		while(1)
-		{
-	        res = f_readdir(&dir, &fileinfo);                   //读取目录下的一个文件
-	        if (res != FR_OK || fileinfo.fname[0] == 0) break;  //错误了/到末尾了,退出
-#if _USE_LFN
-        	fn = *fileinfo.lfname ? fileinfo.lfname : fileinfo.fname;
-#else							   
-        	fn = fileinfo.fname;
-#endif	                                              /* It is a file. */
-			printf("%s/", path);//打印路径	
-			printf("%s\r\n",  fn);//打印文件名	  
-		} 
-		printf("\r\n"); 
-    }	 
-#if _USE_LFN
-	free(fileinfo.lfname);
-#endif	 
-    return res;	  
+//    res = f_opendir(&dir,(const TCHAR*)path); //打开一个目录
+//    if (res == FR_OK) 
+//	{	
+//		printf("\r\n"); 
+//		while(1)
+//		{
+//	        res = f_readdir(&dir, &fileinfo);                   //读取目录下的一个文件
+//	        if (res != FR_OK || fileinfo.fname[0] == 0) break;  //错误了/到末尾了,退出
+//#if _USE_LFN
+//        	fn = *fileinfo.lfname ? fileinfo.lfname : fileinfo.fname;
+//#else							   
+//        	fn = fileinfo.fname;
+//#endif	                                              /* It is a file. */
+//			printf("%s/", path);//打印路径	
+//			printf("%s\r\n",  fn);//打印文件名	  
+//		} 
+//		printf("\r\n"); 
+//    }	 
+//#if _USE_LFN
+//	free(fileinfo.lfname);
+//#endif	 
+//    return res;	  
+	return 0;
 }
 
 int do_ls (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
-	FATFS *fs;
-	FRESULT Res;	
-	fs = malloc (sizeof (FATFS));
-	if (fs == NULL){
-		my_println ("malloc (sizeof (FATFS)) failed!");
-		return -1;
-	}
-	switch (argc){
-		case 1:
-			Res = f_mount(fs, "0:" , 1);
-			if (Res != FR_OK){
-				my_println ("f_mount disk \"0:\" failed!");
-			}else{
-				scan_files ("0:");
-			}
-			break;
-		case 2:
-			if (strcmp (argv[1], "sd") == 0){
-				Res = f_mount(fs, "0:" , 1);
-				if (Res != FR_OK){
-					my_println ("f_mount disk \"0:\" failed!");
-				}else{
-					scan_files ("0:");
-				}
-				break;
-			}else if (strcmp (argv[1], "flash") == 0){
-				Res = f_mount(fs, "1:" , 1);
-				if (Res != FR_OK){
-					my_println ("f_mount disk \"1:\" failed!");
-				}else{
-					scan_files ("1:");
-				}
-				break;
-			}else{
-				my_println ("disk must be sd or flash");
-			}
-			cmd_usage (cmdtp);
-			break;
-		default: cmd_usage (cmdtp);break;
-	}
-	if (fs != NULL)
-		free (fs);
+//	FATFS *fs;
+//	FRESULT Res;	
+//	fs = malloc (sizeof (FATFS));
+//	if (fs == NULL){
+//		my_println ("malloc (sizeof (FATFS)) failed!");
+//		return -1;
+//	}
+//	switch (argc){
+//		case 1:
+//			Res = f_mount(fs, "0:" , 1);
+//			if (Res != FR_OK){
+//				my_println ("f_mount disk \"0:\" failed!");
+//			}else{
+//				scan_files ("0:");
+//			}
+//			break;
+//		case 2:
+//			if (strcmp (argv[1], "sd") == 0){
+//				Res = f_mount(fs, "0:" , 1);
+//				if (Res != FR_OK){
+//					my_println ("f_mount disk \"0:\" failed!");
+//				}else{
+//					scan_files ("0:");
+//				}
+//				break;
+//			}else if (strcmp (argv[1], "flash") == 0){
+//				Res = f_mount(fs, "1:" , 1);
+//				if (Res != FR_OK){
+//					my_println ("f_mount disk \"1:\" failed!");
+//				}else{
+//					scan_files ("1:");
+//				}
+//				break;
+//			}else{
+//				my_println ("disk must be sd or flash");
+//			}
+//			cmd_usage (cmdtp);
+//			break;
+//		default: cmd_usage (cmdtp);break;
+//	}
+//	if (fs != NULL)
+//		free (fs);
 	return 0;
 }
 MY_CMD(
@@ -938,7 +939,7 @@ MY_CMD(
 	"ls disk path\n"
 );
 
-
+/*
 int do_view (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
 	u16 i, line;
@@ -1010,6 +1011,8 @@ MY_CMD(
 	"view - view the txt file\n",
 	"view filename.txt\n"
 );
+//
+*/
 
 int do_run (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
@@ -1018,7 +1021,7 @@ int do_run (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			start_app ();	
 			break;
 		case 2:
-			if (iap_func (argv[1], 0) != 0){
+			if (0){//iap_func (argv[1], 0) != 0){
 			}else{
 				start_app ();
 			}
@@ -1080,39 +1083,39 @@ MY_CMD(
 
 int do_fdisk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
-	FATFS *fs;
-	FRESULT Res;	
-	
-	fs = malloc (sizeof (FATFS));
-	
-	if (fs == NULL){
-		my_println ("malloc (sizeof (FATFS)) failed!");
-		return -1;
-	}
-	switch (argc){
-		case 2:
-			if (strcmp (argv[1], "flash") == 0){
-				Res = f_mount(fs, "1:" , 1);
-				if (Res != FR_OK){
-					my_println ("f_mount disk \"1:\" failed!");
-				}else{ 
-					Res=f_mkfs("1:", 1, 4096);//格式化FLASH,1,盘符;1,不需要引导区,8 个扇区为1 个簇 
-					 if(Res==0){ 
-						f_setlabel((const TCHAR *)"1:Counter");//设置 Flash 磁盘名：ALIENTEK 
-						my_println("Flash Disk Format Finish");//格式化完成 
-					 }else
-						my_println("Flash Disk Format Error");//格式化失败 
-					 delay_ms(1000); 
-				}
-				break;
-			}else{
-				my_println ("disk must be sd or flash");
-			}
-			cmd_usage (cmdtp);
-		default: cmd_usage (cmdtp);break;
-	}
-	if (fs != NULL)
-		free (fs);
+//	FATFS *fs;
+//	FRESULT Res;	
+//	
+//	fs = malloc (sizeof (FATFS));
+//	
+//	if (fs == NULL){
+//		my_println ("malloc (sizeof (FATFS)) failed!");
+//		return -1;
+//	}
+//	switch (argc){
+//		case 2:
+//			if (strcmp (argv[1], "flash") == 0){
+//				Res = f_mount(fs, "1:" , 1);
+//				if (Res != FR_OK){
+//					my_println ("f_mount disk \"1:\" failed!");
+//				}else{ 
+//					Res=f_mkfs("1:", 1, 4096);//格式化FLASH,1,盘符;1,不需要引导区,8 个扇区为1 个簇 
+//					 if(Res==0){ 
+//						f_setlabel((const TCHAR *)"1:Counter");//设置 Flash 磁盘名：ALIENTEK 
+//						my_println("Flash Disk Format Finish");//格式化完成 
+//					 }else
+//						my_println("Flash Disk Format Error");//格式化失败 
+//					 delay_ms(1000); 
+//				}
+//				break;
+//			}else{
+//				my_println ("disk must be sd or flash");
+//			}
+//			cmd_usage (cmdtp);
+//		default: cmd_usage (cmdtp);break;
+//	}
+//	if (fs != NULL)
+//		free (fs);
 	return 0;
 }
 MY_CMD(
@@ -1229,22 +1232,23 @@ int mk_reg (int flag)
 }
 int do_mk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {	
-	FATFS *fs;
-	FIL *file;
-	FRESULT Res;	
-	
-	fs = malloc (sizeof (FATFS));
-	file = malloc (sizeof (FIL));
-	
-	if (fs == NULL || file == NULL){
-		my_println ("malloc failed!");
-		return -1;
-	}
+//	FATFS *fs;
+//	FIL *file;
+//	FRESULT Res;	
+//	
+//	fs = malloc (sizeof (FATFS));
+//	file = malloc (sizeof (FIL));
+//	
+//	if (fs == NULL || file == NULL){
+//		my_println ("malloc failed!");
+//		return -1;
+//	}
 	switch (argc){
 		case 2:
 			if (strcmp (argv[1], "reg") == 0){
 				mk_reg (1);
-			}else{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+			}else{ 
+					/*
 				Res = f_mount(fs, "1:" , 1);
 				if (Res != FR_OK){
 					my_println ("f_mount disk \"1:\" failed!");
@@ -1270,7 +1274,7 @@ int do_mk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 						f_close(file);
 						f_unlink (argv[1]);
 					}
-				}
+				}*/
 			}
 			break;
 		case 3:
@@ -1286,10 +1290,10 @@ int do_mk (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			break;
 		default: cmd_usage (cmdtp);break;
 	}
-	if (fs != NULL)
-		free (fs);
-	if (file != NULL)
-		free (file);
+//	if (fs != NULL)
+//		free (fs);
+//	if (file != NULL)
+//		free (file);
 	return 0;
 }
 MY_CMD(
@@ -1456,6 +1460,7 @@ MY_CMD(
 
 #define REG_FILE "0:/reg.txt"
 
+/*
 S16 check_reg (void)
 {
 	FATFS fs;
@@ -1525,16 +1530,8 @@ S16 check_reg (void)
 		free (p_reg_file);
 	return Res;
 }
-
-                                                                
-
-
-
-
-
-
-
-
+//
+*/
 
 
 

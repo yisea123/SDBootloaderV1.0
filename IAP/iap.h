@@ -4,8 +4,8 @@
 #define HEX_DATA_START 9
 
 #define FLASH_APP1_ADDR		0x08010000  	//第一个应用程序起始地址(存放在FLASH)
-#define FLASH_REG_INFO_ADDR		(0x08070000)  	//
-#define FLASH_DATA_ADDR		(0x08078000)  	//第一个应用程序起始地址(存放在SPI FLASH)
+#define FLASH_REG_INFO_ADDR		(0x0800D000)  	//
+#define FLASH_DATA_ADDR		(FLASH_REG_INFO_ADDR + 1000)  	//第一个应用程序起始地址(存放在SPI FLASH)
 
 
 #define DEFAULT_APP_FILE_NAME "0:/Counter.hex"

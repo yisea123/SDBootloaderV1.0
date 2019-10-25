@@ -82,7 +82,7 @@ int main (void)
 #endif
 	/*************************************************************************************/
 	if (my_env.SD_exist == 0x55){
-		check_reg ();
+//		check_reg ();
 	}
 	
 	my_println ("App will Auto Start After 3 Sec...!",);
